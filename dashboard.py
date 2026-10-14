@@ -10,11 +10,12 @@ st.set_page_config(page_title="AML Monitoring Lab",layout="wide")
 st.title("AML Transaction Monitoring Lab")
 st.caption("Exploratory analysis of synthetic AMLSim transactions; not a real-world monitoring system.")
 required=[R/"monitoring_by_step.csv",R/"monitoring_by_type.csv",R/"holdout_by_type.csv",R/"model_metrics.json"]
+hourly=pd.read_csv(required[0]) if required[0].exists() else pd.DataFrame(columns=["step","transaction_count","sar_pattern_count","rule_alerts"])
+types=pd.read_csv(required[1]) if required[1].exists() else pd.DataFrame(columns=["type","sar_pattern_count","rule_alerts"])
+holdout=pd.read_csv(required[2]) if required[2].exists() else pd.DataFrame()
+metrics=json.loads(required[3].read_text(encoding="utf-8")) if required[3].exists() else {"strategies":[],"train_rows":0,"test_rows":0,"supervised_average_precision":0.0}
 if not all(p.exists() for p in required):
-    st.info("Run the prepare and analyze commands in README.md to generate the report files.")
-    st.stop()
-hourly,types,holdout=[pd.read_csv(p) for p in required[:3]]
-metrics=json.loads(required[3].read_text(encoding="utf-8"))
+    st.info("Monitoring and strategy tabs fill in after analysis. The Data quality tab is available after running validation.")
 tab1,tab2,tab3,tab4=st.tabs(["Monitoring overview","Strategy comparison","Network view","Data quality"])
 with tab1:
     c1,c2=st.columns(2)
@@ -24,7 +25,7 @@ with tab1:
         st.plotly_chart(px.bar(types,x="type",y=["sar_pattern_count","rule_alerts"],barmode="group",title="Pattern labels and rule alerts by transaction type"),use_container_width=True)
     st.dataframe(types,use_container_width=True,hide_index=True)
 with tab2:
-    strategies=pd.DataFrame(metrics["strategies"])
+    strategies=pd.DataFrame(metrics["strategies"],columns=["method","setting","alert_rate","recall","sar_pattern_amount_flagged","precision"])
     left,right=st.columns(2)
     with left:
         st.plotly_chart(px.scatter(strategies,x="alert_rate",y="recall",color="method",size="sar_pattern_amount_flagged",hover_name="setting",title="Detection coverage vs alert rate"),use_container_width=True)
@@ -42,7 +43,7 @@ with tab3:
 with tab4:
     quality_path=R/"data_quality_summary.json"
     if not quality_path.exists():
-        st.info("Run the validate_data command from README.md to create data quality charts.")
+        st.info("Run python -m aml_monitoring.validate_data --input data/raw/transactions.csv --output reports to create data quality charts.")
     else:
         quality=json.loads(quality_path.read_text(encoding="utf-8"))
         if quality.get("required_columns_missing"):
