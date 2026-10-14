@@ -15,7 +15,7 @@ if not all(p.exists() for p in required):
     st.stop()
 hourly,types,holdout=[pd.read_csv(p) for p in required[:3]]
 metrics=json.loads(required[3].read_text(encoding="utf-8"))
-tab1,tab2,tab3=st.tabs(["Monitoring overview","Strategy comparison","Network view"])
+tab1,tab2,tab3,tab4=st.tabs(["Monitoring overview","Strategy comparison","Network view","Data quality"])
 with tab1:
     c1,c2=st.columns(2)
     with c1:
@@ -39,4 +39,30 @@ with tab3:
         accounts=pd.read_csv(net)
         st.plotly_chart(px.scatter(accounts,x="in_degree",y="out_degree",size="in_amount",color="pagerank",hover_name="account",title="High-connectivity accounts in directed flow graph"),use_container_width=True)
         st.dataframe(accounts.head(100),use_container_width=True,hide_index=True)
+with tab4:
+    quality_path=R/"data_quality_summary.json"
+    if not quality_path.exists():
+        st.info("Run the validate_data command from README.md to create data quality charts.")
+    else:
+        quality=json.loads(quality_path.read_text(encoding="utf-8"))
+        if quality.get("required_columns_missing"):
+            st.error(f"Required fields are missing: {quality['required_columns_missing']}")
+        st.metric("Rows inspected",f"{quality.get('row_count',0):,}")
+        st.metric("Ready for pipeline","Yes" if quality.get("ready_for_pipeline") else "No — inspect flags below")
+        qc=R/"data_quality_columns.csv"
+        if qc.exists():
+            missing=pd.read_csv(qc)
+            st.plotly_chart(px.bar(missing,x="column",y="missing_rate",title="Missing or blank values by column",labels={"missing_rate":"Missing rate"}),use_container_width=True)
+        qstep=R/"data_quality_by_step.csv"
+        if qstep.exists():
+            step_data=pd.read_csv(qstep)
+            st.plotly_chart(px.line(step_data,x="step",y=["transaction_count","positive_labels"],title="Transaction volume and positive simulator labels by step"),use_container_width=True)
+        amount_sample=R/"data_quality_amount_sample.csv"
+        if amount_sample.exists():
+            sample=pd.read_csv(amount_sample)
+            st.plotly_chart(px.histogram(sample,x="amount",nbins=50,title="Sampled transaction amount distribution"),use_container_width=True)
+        checks={k:quality.get(k) for k in ["invalid_step_count","invalid_amount_count","nonpositive_amount_count","invalid_label_count","required_field_missing_count","duplicate_transaction_count","positive_label_count","negative_label_count"]}
+        st.subheader("Quality check results")
+        st.json(checks)
+        st.caption("Duplicates and nonpositive amounts are review flags, not automatic proof that a row is invalid. Confirm the source schema and data meaning before changing records.")
 st.warning("Simulator labels are not confirmed suspicious activity. Do not treat these scores, example thresholds, or visual patterns as production recommendations. Read docs/model_white_paper.md.")
