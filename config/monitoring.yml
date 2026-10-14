@@ -1,0 +1,8 @@
+# Illustrative rule parameters only. Tune on training/validation windows and
+# review workload assumptions; these are not real-world policy thresholds.
+high_activity_sender_count: 8
+high_activity_receiver_count: 8
+pass_through_min_inflow: 1000
+pass_through_ratio_low: 0.70
+pass_through_ratio_high: 1.30
+supervised_thresholds: [0.10, 0.25, 0.50, 0.75]
