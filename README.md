@@ -10,7 +10,7 @@ Expected columns follow the AMLSim transaction log: step, type, amount, sender/r
 
 ## Run
 
-\`\`\`bash
+```bash
 python -m venv .venv
 # Windows PowerShell: .venv\Scripts\Activate.ps1
 # macOS/Linux: source .venv/bin/activate
@@ -20,7 +20,7 @@ python -m aml_monitoring.validate_data --input data/raw/transactions.csv --outpu
 python -m aml_monitoring.prepare --input data/raw/transactions.csv --output data/processed/transactions.parquet
 python -m aml_monitoring.analyze --input data/processed/transactions.parquet --output reports
 streamlit run dashboard.py
-\`\`\`
+```
 
 Run validation first. It checks schema and data quality and produces summary files. Preparation writes historical features, analysis compares rules and models, and the dashboard visualizes monitoring, model performance, network structure, and data quality.
 
