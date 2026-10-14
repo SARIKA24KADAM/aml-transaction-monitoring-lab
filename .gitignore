@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.py[cod]
+data/raw/*
+!data/raw/README.md
+data/processed/*
+reports/*
+!reports/.gitkeep
+*.joblib
+.DS_Store
